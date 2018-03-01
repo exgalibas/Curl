@@ -1,0 +1,9 @@
+{
+  "name": "exgalibas/curl",
+  "description": "php curl class",
+  "homepage": "https://github.com/exgalibas/Curl",
+  "license": "MIT",
+  "require": {
+    "php": ">=7.0.0"
+  }
+}
