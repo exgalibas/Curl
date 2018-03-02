@@ -3,7 +3,7 @@
  * Date: 2018/2/8
  * @author joker <exgalibas@gmail.com>
  */
-namespace Curl;
+namespace exgalibas\curl;
 
 class Cookie
 {

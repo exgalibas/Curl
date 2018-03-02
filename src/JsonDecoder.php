@@ -4,7 +4,7 @@
  * @author joker <exgalibas@gmail.com>
  */
 
-namespace Curl;
+namespace exgalibas\curl;
 
 class JsonDecoder implements Decoder
 {

@@ -1,7 +1,7 @@
 {
     "name": "exgalibas/curl",
     "description": "php curl class",
-    "type": "project",
+    "type": "library",
     "license": "MIT",
     "authors": [
         {
@@ -11,6 +11,11 @@
     ],
     "minimum-stability": "dev",
     "require": {
-	"php": ">=7.0.0"	
+	"php": ">=7.0"
+    },
+    "autoload": {
+    	"psr-4": {
+	  "exgalibas\\curl\\": "src/"
+	}
     }
 }
