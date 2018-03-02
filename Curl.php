@@ -397,6 +397,16 @@ class Curl
     }
 
     /**
+     * @param $key
+     *
+     * remove specified header
+     */
+    public function removeHeader($key)
+    {
+        $this->setHeader($key, '');
+    }
+
+    /**
      * @return array
      *
      * deal headers
@@ -478,6 +488,81 @@ class Curl
         $this->setOpt(CURLOPT_CUSTOMREQUEST, 'HEAD');
         $this->setOpt(CURLOPT_NOBODY, true);
         $this->exec();
+    }
+
+    /**
+     * @param $url
+     * @param array $data
+     *
+     * patch request
+     */
+    public function patch($url, $data = [])
+    {
+        if (is_array($url)) {
+            $data = $url;
+            $url = $this->url;
+        }
+
+        if (is_array($data) && empty($data)) {
+            $this->removeHeader('Content-Length');
+        }
+
+        $this->setUrl($url);
+        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'PATCH');
+        $this->setOpt(CURLOPT_POSTFIELDS, $this->buildPostData($data));
+        return $this->exec();
+    }
+
+    /**
+     * @param $url
+     * @param array $data
+     *
+     * put request
+     */
+    public function put($url, $data = [])
+    {
+        if (is_array($url)) {
+            $data = $url;
+            $url = $this->url;
+        }
+        $this->setUrl($url);
+        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'PUT');
+        $put_data = $this->buildPostData($data);
+        if (empty($this->options[CURLOPT_INFILE]) && empty($this->options[CURLOPT_INFILESIZE])) {
+            if (is_string($put_data)) {
+                $this->setHeader('Content-Length', strlen($put_data));
+            }
+        }
+        if (!empty($put_data)) {
+            $this->setOpt(CURLOPT_POSTFIELDS, $put_data);
+        }
+        return $this->exec();
+    }
+
+    /**
+     * @param $url
+     * @param array $data
+     *
+     * search request
+     */
+    public function search($url, $data = array())
+    {
+        if (is_array($url)) {
+            $data = $url;
+            $url = (string)$this->url;
+        }
+        $this->setUrl($url);
+        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'SEARCH');
+        $put_data = $this->buildPostData($data);
+        if (empty($this->options[CURLOPT_INFILE]) && empty($this->options[CURLOPT_INFILESIZE])) {
+            if (is_string($put_data)) {
+                $this->setHeader('Content-Length', strlen($put_data));
+            }
+        }
+        if (!empty($put_data)) {
+            $this->setOpt(CURLOPT_POSTFIELDS, $put_data);
+        }
+        return $this->exec();
     }
 
     /**
