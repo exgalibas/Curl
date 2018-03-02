@@ -1,0 +1,16 @@
+{
+    "name": "exgalibas/curl",
+    "description": "php curl class",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "exgalibas",
+            "email": "exgalibas@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+	"php": ">=7.0.0"	
+    }
+}
