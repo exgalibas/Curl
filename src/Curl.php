@@ -56,6 +56,11 @@ class Curl
     public $url = null;
 
     /**
+     * @var null
+     */
+    public $data = null;
+
+    /**
      * @var int $retryCount
      *
      * retry specified times when curl_exec() fail, default 0 time
@@ -166,8 +171,8 @@ class Curl
      * decoder map, [decoder pattern => decoder function]
      */
     public $decoderMap = [
-        '/^(?:application|text)\/(?:[a-z]+(?:[\.-][0-9a-z]+){0,}[\+\.]|x-)?json(?:-[a-z]+)?/i' => 'JsonDecoder',
-        '~^(?:text/|application/(?:atom\+|rss\+)?)xml~i' => 'XmlDecoder',
+        '/^(?:application|text)\/(?:[a-z]+(?:[\.-][0-9a-z]+){0,}[\+\.]|x-)?json(?:-[a-z]+)?/i' => 'exgalibas\curl\JsonDecoder',
+        '~^(?:text/|application/(?:atom\+|rss\+)?)xml~i' => 'exgalibas\curl\XmlDecoder',
     ];
 
     /**
@@ -180,24 +185,23 @@ class Curl
         if (!extension_loaded('curl')) {
             throw new \ErrorException("can not load Curl extension");
         }
-        $this->init();
+        $this->init($url);
     }
 
     /**
      * @param null $url
      * @return $this
      */
-    public function init($url = null)
+    protected function init($url = null)
     {
         $this->curl = curl_init();
         $this->setDefaultUserAgent();
-        $this->setDefaultTransfer();
         $this->setDefaultTimeout();
-        $this->setOpt(CURLOPT_RETURNTRANSFER, true);
-        $this->setOpt(CURLOPT_HEADER, true);
-        $this->setOpt(CURLOPT_NOBODY, false);
-        $this->setOpt(CURLINFO_HEADER_OUT, true);
-        $this->setUrl($url);
+        $this->opt(CURLOPT_RETURNTRANSFER, true);
+        $this->opt(CURLOPT_HEADER, true);
+        $this->opt(CURLOPT_NOBODY, false);
+        $this->opt(CURLINFO_HEADER_OUT, true);
+        $this->url($url);
         return $this;
     }
 
@@ -206,10 +210,10 @@ class Curl
      *
      * set default user agent
      */
-    public function setDefaultUserAgent()
+    protected function setDefaultUserAgent()
     {
         $agent = "exgalibas/Curl (https://github.com/exgalibas/Curl.git)";
-        $this->setUserAgent($agent);
+        $this->agent($agent);
         return $this;
     }
 
@@ -219,19 +223,9 @@ class Curl
      *
      * set user agent
      */
-    public function setUserAgent($agent)
+    public function agent($agent)
     {
-        return $this->setOpt(CURLOPT_USERAGENT, $agent);
-    }
-
-    /**
-     * @return Curl
-     *
-     * set CURLOPT_RETURNTRANSFER true
-     */
-    public function setDefaultTransfer()
-    {
-        return $this->setOpt(CURLOPT_RETURNTRANSFER, true);
+        return $this->opt(CURLOPT_USERAGENT, $agent);
     }
 
     /**
@@ -239,9 +233,9 @@ class Curl
      *
      * set default timeout
      */
-    public function setDefaultTimeOut()
+    protected function setDefaultTimeOut()
     {
-        return $this->setTimeOut(self::TIME_OUT);
+        return $this->expire(self::TIME_OUT);
     }
 
     /**
@@ -250,9 +244,9 @@ class Curl
      *
      * set timeout
      */
-    public function setTimeOut($time)
+    public function expire($time)
     {
-        return $this->setOpt(CURLOPT_TIMEOUT, $time);
+        return $this->opt(CURLOPT_TIMEOUT, $time);
     }
 
     /**
@@ -262,10 +256,24 @@ class Curl
      *
      * set curl option
      */
-    public function setOpt($option, $value)
+    public function opt($option, $value)
     {
         if (curl_setopt($this->curl, $option, $value)) {
             $this->options[$option] = $value;
+        }
+        return $this;
+    }
+
+    /**
+     * @param array $options
+     * @return mixed
+     *
+     * set curl options
+     */
+    public function opts(array $options)
+    {
+        foreach ($options as $option => $value) {
+            $this->opt($option, $value);
         }
         return $this;
     }
@@ -292,79 +300,95 @@ class Curl
     }
 
     /**
+     * @param $data
+     * @return $this
+     *
+     * format request url with data
+     */
+    protected function formatUrl($data)
+    {
+        if ($this->url) {
+            $this->url = Helper::formatUrl($this->url, $data);
+        }
+        return $this;
+    }
+
+    /**
      * @param $url
-     * @param null $data
-     * @return Curl
+     * @return $this
      *
      * set request url
      */
-    public function setUrl($url, $data = null)
+    public function url($url)
     {
-        if ($url) {
-            $url = strval($url);
-            $this->url = Helper::formatUrl($url, $data);
-        }
-        return $this->setOpt(CURLOPT_URL, $this->url);
+        $this->url = $url;
+        return $this;
     }
 
     /**
      * @param $pattern
      * @param $decoder
+     * @return $this
      *
      * add decoder into array map
      */
-    public function setDecoderMap($pattern, $decoder)
+    public function map($pattern, $decoder)
     {
         $this->decoderMap[$pattern] = $decoder;
+        return $this;
     }
 
     /**
      * @param Decoder $decoder
+     * @return $this
      *
      * specify decoder
      */
-    public function setDecoder(Decoder $decoder)
+    public function decoder(Decoder $decoder)
     {
         $this->decoder = $decoder;
+        return $this;
     }
 
     /**
-     * @param $url
-     * @param null $data
+     * @param array $data
      *
      * get request
      */
-    public function get($url, $data = null)
+    public function get($data = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = $this->url;
-        }
-        $this->setUrl($url, $data);
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'GET');
-        $this->setOpt(CURLOPT_HTTPGET, true);
+
+        $this->formatUrl($data);
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'GET');
+        $this->opt(CURLOPT_HTTPGET, true);
         $this->exec();
     }
 
     /**
-     * @param $url
      * @param array $data
      *
      * post request
      */
-    public function post($url, $data = [])
+    public function post($data = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = $this->url;
-        }
-        $this->setUrl($url);
-        $this->setHeader('Expect', '');
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'POST');
-        $this->setOpt(CURLOPT_POST, true);
-        $this->setOpt(CURLOPT_SAFE_UPLOAD, true);
-        $this->setOpt(CURLOPT_POSTFIELDS, $this->buildPostData($data));
+        $this->header('Expect', '');
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'POST');
+        $this->opt(CURLOPT_POST, true);
+        $this->opt(CURLOPT_SAFE_UPLOAD, true);
+        $this->opt(CURLOPT_POSTFIELDS, $this->buildPostData($data));
         $this->exec();
+    }
+
+
+    /**
+     * @return $this
+     *
+     * set json
+     */
+    public function json()
+    {
+        $this->header('Content-Type', 'application/json');
+        return $this;
     }
 
     /**
@@ -374,11 +398,11 @@ class Curl
      *
      * set curl header
      */
-    public function setHeader($key, $value)
+    public function header($key, $value)
     {
         $this->headers[$key] = $value;
         $headers = $this->dealHeaders();
-        $this->setOpt(CURLOPT_HTTPHEADER, $headers);
+        $this->opt(CURLOPT_HTTPHEADER, $headers);
         return $this;
     }
 
@@ -388,11 +412,11 @@ class Curl
      *
      * set curl headers
      */
-    public function setHeaders(array $head)
+    public function headers(array $head)
     {
         $this->headers = array_merge($this->headers, $head);
         $headers = $this->dealHeaders();
-        $this->setOpt(CURLOPT_HTTPHEADER, $headers);
+        $this->opt(CURLOPT_HTTPHEADER, $headers);
         return $this;
     }
 
@@ -403,7 +427,7 @@ class Curl
      */
     public function removeHeader($key)
     {
-        $this->setHeader($key, '');
+        $this->header($key, '');
     }
 
     /**
@@ -438,12 +462,13 @@ class Curl
         }
 
         $data = Helper::demotion($data, $prefix);
+        $has_file = false;
         foreach ($data as $key => $value)
         {
             if (is_string($value) && strpos($value, '@') === 0 && is_file(substr($value, 1))) {
                 $has_file = true;
-                $data[$key] = new CURLFile(substr($value, 1));
-            } elseif ($value instanceof CURLFile) {
+                $data[$key] = new \CURLFile(substr($value, 1));
+            } elseif ($value instanceof \CURLFile) {
                 $has_file = true;
             }
         }
@@ -456,128 +481,111 @@ class Curl
     }
 
     /**
-     * @param $url
      * @param array $data
      *
      * options request
      */
-    public function options($url, $data = [])
+    public function options($data = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = $this->url;
-        }
-        $this->setUrl($url, $data);
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'OPTIONS');
+        $this->formatUrl($data);
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'OPTIONS');
         $this->exec();
     }
 
     /**
-     * @param $url
      * @param array $data
      *
      * head request
      */
-    public function head($url, $data = [])
+    public function head($data = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = $this->url;
-        }
-        $this->setUrl($url, $data);
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'HEAD');
-        $this->setOpt(CURLOPT_NOBODY, true);
+        $this->formatUrl($data);
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'HEAD');
+        $this->opt(CURLOPT_NOBODY, true);
         $this->exec();
     }
 
     /**
-     * @param $url
      * @param array $data
      *
      * patch request
      */
-    public function patch($url, $data = [])
+    public function patch($data = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = $this->url;
-        }
-
         if (is_array($data) && empty($data)) {
             $this->removeHeader('Content-Length');
         }
 
-        $this->setUrl($url);
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'PATCH');
-        $this->setOpt(CURLOPT_POSTFIELDS, $this->buildPostData($data));
-        return $this->exec();
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'PATCH');
+        $this->opt(CURLOPT_POSTFIELDS, $this->buildPostData($data));
+        $this->exec();
     }
 
     /**
-     * @param $url
      * @param array $data
      *
      * put request
      */
-    public function put($url, $data = [])
+    public function put($data = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = $this->url;
-        }
-        $this->setUrl($url);
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'PUT');
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'PUT');
         $put_data = $this->buildPostData($data);
         if (empty($this->options[CURLOPT_INFILE]) && empty($this->options[CURLOPT_INFILESIZE])) {
             if (is_string($put_data)) {
-                $this->setHeader('Content-Length', strlen($put_data));
+                $this->header('Content-Length', strlen($put_data));
             }
         }
         if (!empty($put_data)) {
-            $this->setOpt(CURLOPT_POSTFIELDS, $put_data);
+            $this->opt(CURLOPT_POSTFIELDS, $put_data);
         }
-        return $this->exec();
+        $this->exec();
     }
 
     /**
-     * @param $url
      * @param array $data
+     * @param array $query
      *
-     * search request
+     * delete request
      */
-    public function search($url, $data = array())
+    public function delete($data = [], $query = [])
     {
-        if (is_array($url)) {
-            $data = $url;
-            $url = (string)$this->url;
-        }
-        $this->setUrl($url);
-        $this->setOpt(CURLOPT_CUSTOMREQUEST, 'SEARCH');
-        $put_data = $this->buildPostData($data);
-        if (empty($this->options[CURLOPT_INFILE]) && empty($this->options[CURLOPT_INFILESIZE])) {
-            if (is_string($put_data)) {
-                $this->setHeader('Content-Length', strlen($put_data));
-            }
-        }
-        if (!empty($put_data)) {
-            $this->setOpt(CURLOPT_POSTFIELDS, $put_data);
-        }
-        return $this->exec();
+        $this->formatUrl($query);
+        $this->opt(CURLOPT_CUSTOMREQUEST, 'DELETE');
+        $this->opt(CURLOPT_POSTFIELDS, $this->buildPostData($data));
+        $this->exec();
+    }
+
+    /**
+     * @param $count
+     * @return $this
+     *
+     * set retry count
+     */
+    public function retry($count)
+    {
+        $this->retryCount = intval($count);
+        return $this;
+    }
+
+    protected function attemptRetry()
+    {
+        if ($this->retryCount > 0) return true;
+        return false;
     }
 
     /**
      * exec Curl request
      */
-    public function exec()
+    protected function exec()
     {
-        if ($this->retryCount < 0) return;
-        $this->retryCount--;
-
         $this->run();
         $this->checkHttpStatus();
         $this->dealCurlRawResponse();
         $this->checkError();
-        $this->close();
+        if ($this->error && $this->attemptRetry()) {
+            $this->retryCount--;
+            $this->exec();
+        }
     }
 
     /**
@@ -585,6 +593,7 @@ class Curl
      */
     protected function run()
     {
+        $this->opt(CURLOPT_URL, $this->url);
         if (($curl_ret = curl_exec($this->curl)) === false) {
             $this->curlError = true;
             $this->curlErrorCode = curl_errno($this->curl);
@@ -704,6 +713,9 @@ class Curl
         if (is_resource($this->curl)) {
             curl_close($this->curl);
         }
+        $this->options = null;
+        $this->decoder = null;
+        $this->decoderArgs = null;
     }
 
     /**
@@ -721,7 +733,7 @@ class Curl
      *
      * set decoder args
      */
-    public function setDecodeArgs($args, $merge = true)
+    public function decoderArgs($args, $merge = true)
     {
         !is_array($args) && $args = [$args];
         if (!empty($args)) {
