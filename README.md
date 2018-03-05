@@ -133,10 +133,7 @@ $curl->url("http://example.com/index")->post($data);
 ```
 
 ### Processing Response
-There are two default decoders in the map, jsonDecoder and xmlDecoder
-The pattern of map is [regex string => decoder]
-if you want to use default decoders,the Content-Type of response header must be the right type,like application/json
-you can also specify other decoder or add new rules in the map
+There are two default decoders in the map, jsonDecoder and xmlDecoder,the pattern of map is [regex string => decoder].if you want to use default decoders,the Content-Type of response header must be the right type,like application/json,you can also specify other decoder or add new rules in the map.
 ```php
 // specify decoder
 // $decoder must implements Decoder interface,$args will be transferred to $decoder
