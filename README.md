@@ -133,19 +133,21 @@ $curl->url("http://example.com/index")->post($data);
 ```
 
 ### Processing Response
+There are two default decoders in the map, jsonDecoder and xmlDecoder
+The pattern of map is [regex string => decoder]
+if you want to use default decoders,the Content-Type of response header must be the right type,like application/json
+you can also specify other decoder or add new rules in the map
 ```php
 // specify decoder
-// $decoder must implements Decoder interface,$args will be transfered to $decoder
+// $decoder must implements Decoder interface,$args will be transferred to $decoder
 $curl->url("http://127.0.0.1:8808/index1.php")->decoder($decoder)->decoderArgs($args)->get();
 
-// use default decoders in the map
-// the Content-Type of response header must be the right type,like application/json
+// jsonDecoder
+$args = [true, 12, JSON_BIGINT_AS_STRING]; //args will be used by json_decode()
+$curl->url("http://127.0.0.1:8808/index1.php")->decoderArgs($args)->get();
 
-// decode json to object in default,you can decode to array by setting decoder args
-$curl->url("http://127.0.0.1:8808/index1.php")->decoderArgs(true)->get();
 
-// the pattern of map is [regex string => decoder]
-// you can add your rules in the decoder map, it will search the right decoder by comparing the Content-Type of response and the regex of map automatically
+// add new rules, it will search the right decoder by comparing the Content-Type of response and the regex of map automatically
 $curl->url("http://127.0.0.1:8808/index1.php")->map('~^(?:text/|application/(?:atom\+|rss\+)?)xml~i', 'exgalibas\curl\XmlDecoder')->get();
 ```
 
