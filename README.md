@@ -86,6 +86,11 @@ $curl->url("http://example.com/index")->expire(10)->get(["name" => "exgalibas"])
 $curl->url("http://example.com/index")->retry(4)->get(["name" => "exgalibas"]);
 ```
 
+### Set Header
+```php
+$curl->url("http://example.com/index")->header("Content-Type", "application/json")->post(["name" => "exgalibas"]);
+```
+
 ### POST
 ```php
 $curl->url("http://example.com/index")->post(["name" => "exgalibas"]);
