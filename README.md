@@ -1,5 +1,5 @@
 # Curl
-Curl is a simple wrapper of php cURL,chainable and simple
+Curl is a wrapper of php cURL,chainable and simple
 
 # Installation
 
@@ -134,14 +134,18 @@ $curl->url("http://example.com/index")->post($data);
 
 ### Processing Response
 ```php
-// specify decoder,$decoder must implements Decoder interface,$args will be transfered to $decoder
+// specify decoder
+// $decoder must implements Decoder interface,$args will be transfered to $decoder
 $curl->url("http://127.0.0.1:8808/index1.php")->decoder($decoder)->decoderArgs($args)->get();
 
-// use default decoders in the map,the Content-Type of response header must be the right type,like application/json
-// decode json to object in default,you can set decoder args to decode to array
+// use default decoders in the map
+// the Content-Type of response header must be the right type,like application/json
+
+// decode json to object in default,you can decode to array by setting decoder args
 $curl->url("http://127.0.0.1:8808/index1.php")->decoderArgs(true)->get();
 
-// you can also add your rule in the decoder map, the pattern of map is [regex string => decoder]
+// the pattern of map is [regex string => decoder]
+// you can add your rules in the decoder map, it will search the right decoder by comparing the Content-Type of response and the regex of map automatically
 $curl->url("http://127.0.0.1:8808/index1.php")->map('~^(?:text/|application/(?:atom\+|rss\+)?)xml~i', 'exgalibas\curl\XmlDecoder')->get();
 ```
 
