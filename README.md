@@ -3,7 +3,7 @@ Curl is a wrapper of php cURL,chainable and simple
 
 # Installation
 
-    composer require exgalibas/curl dev-master
+    composer require exgalibas/curl
 
 # Request Methods
 GET|POST|OPTIONS|HEAD|PATCH|PUT|DELETE
